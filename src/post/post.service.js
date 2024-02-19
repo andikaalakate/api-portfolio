@@ -1,84 +1,54 @@
-const prisma = require("../db");
+const { findPosts, findPostById, insertPost, findPostByTitle, deletePost, editPost } = require("./post.repository");
 
 const getAllPosts = async () => {
-  const posts = await prisma.post.findMany();
+  const posts = await findPosts();
 
   return posts;
 };
 
-const getPostById = async (id) => {
-  const post = await prisma.post.findUnique({
-    where: {
-      id: parseInt(id),
-    },
-  });
+const getPostById = async (postId) => {
+  if (typeof postId !== "number") {
+    throw Error("Id must be a number");
+  }
+
+  const post = await findPostById(postId);
+
+  if (!post) {
+    throw Error("Post not found");
+  }
+
   return post;
 };
 
 const createPost = async (newPostData) => {
-  const post = prisma.post.create({
-    data: {
-      title: newPostData.title,
-      body: newPostData.body,
-      image: newPostData.image,
-      author: newPostData.author,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-  });
+  const findPost = await findPostByTitle(newPostData.title);
+
+  if (findPost) {
+    throw Error("Post Title already exists");
+  }
+
+  const post = await insertPost(newPostData);
 
   return post;
 };
 
-const putPost = async (postId, newPostData) => {
-  const post = prisma.post.update({
-    where: {
-      id: parseInt(postId),
-    },
-    data: {
-      title: newPostData.title,
-      body: newPostData.body,
-      image: newPostData.image,
-      author: newPostData.author,
-      updatedAt: new Date(),
-    },
-  });
+const editPostById = async (postId, postData) => {
+  await getPostById(postId);
 
+  const post = await editPost(postId, postData);
   return post;
 };
 
-const patchPost = async (postId, newPostData) => {
-  const post = prisma.post.update({
-    where: {
-      id: parseInt(postId),
-    },
-    data: {
-      title: newPostData.title,
-      body: newPostData.body,
-      image: newPostData.image,
-      author: newPostData.author,
-      updatedAt: new Date(),
-    },
-  });
+const deletePostById = async (postId) => {
+  await getPostById(postId);
 
-  return post;
-};
-
-const deletePost = async (postId) => {
-  const post = prisma.post.delete({
-    where: {
-      id: parseInt(postId),
-    },
-  });
-
-  return post;
+  await deletePost(postId);
 };
 
 module.exports = {
   getAllPosts,
   getPostById,
   createPost,
-  putPost,
-  patchPost,
-  deletePost,
+  editPostById,
+  deletePostById,
 };
